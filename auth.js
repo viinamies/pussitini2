@@ -35,7 +35,10 @@
     if(box){
       const {data,error}=await client.from('tickets').select('id,subject,department,status,created_at').eq('user_id',user.id).order('created_at',{ascending:false});
       if(error) box.innerHTML='<div class="panel-pad">'+esc(error.message)+'</div>';
-      else box.innerHTML=data?.length?data.map(t=>`<div class="topic"><div class="topic-main"><strong>${esc(t.subject)}</strong><span>${esc(t.department)} · ${new Date(t.created_at).toLocaleString()}</span></div><span class="tag">${esc(t.status)}</span></div>`).join(''):'<div class="panel-pad muted small">You have not submitted any tickets yet.</div>';
+      else {
+        box.innerHTML=data?.length?data.map(t=>`<button type="button" class="topic customer-ticket-row" data-customer-ticket="${esc(t.id)}" style="display:flex;width:100%;text-align:left;background:transparent;color:inherit;border:0;cursor:pointer"><span class="topic-main"><strong>${esc(t.subject)}</strong><span>${esc(t.department)} · ${new Date(t.created_at).toLocaleString()}</span></span><span class="tag">${esc(t.status)}</span></button>`).join(''):'<div class="panel-pad muted small">You have not submitted any tickets yet.</div>';
+        box.querySelectorAll('[data-customer-ticket]').forEach(button=>button.addEventListener('click',()=>openCustomerTicket(button.dataset.customerTicket)));
+      }
     }
     const {data:admin}=await client.rpc('is_admin');
     if(admin===true && $('admin-link')) $('admin-link').hidden=false;
@@ -86,6 +89,36 @@
       finally{btn.disabled=false;}
     });
   }
+
+  let customerTicketId=null;
+  async function openCustomerTicket(id){
+    const {data:{user},error:userError}=await client.auth.getUser();
+    if(userError||!user){say('customer-reply-status','Please sign in again.');return;}
+    const {data:ticket,error}=await client.from('tickets').select('id,subject,department,status,body,created_at').eq('id',id).eq('user_id',user.id).single();
+    if(error){say('customer-reply-status',error.message);return;}
+    customerTicketId=ticket.id;
+    $('customer-ticket-detail').hidden=false;
+    say('customer-ticket-subject',ticket.subject);
+    say('customer-ticket-meta',ticket.department+' · '+ticket.status+' · '+new Date(ticket.created_at).toLocaleString());
+    say('customer-ticket-body',ticket.body);
+    const {data:messages,error:messageError}=await client.from('ticket_messages').select('id,message,is_admin,created_at').eq('ticket_id',id).order('created_at');
+    const target=$('customer-ticket-messages');
+    if(messageError) target.innerHTML='<div class="panel-pad">'+esc(messageError.message)+'</div>';
+    else target.innerHTML=messages?.length?messages.map(m=>`<div class="panel-pad"><b>${m.is_admin?'Support team':'You'}</b><p>${esc(m.message)}</p><span class="muted small">${new Date(m.created_at).toLocaleString()}</span></div>`).join(''):'<div class="panel-pad muted small">No replies yet. Our support team will respond here.</div>';
+    $('customer-ticket-detail').scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  $('customer-close-detail')?.addEventListener('click',()=>{$('customer-ticket-detail').hidden=true;customerTicketId=null;});
+  $('customer-reply-form')?.addEventListener('submit',async e=>{
+    e.preventDefault();
+    if(!customerTicketId)return;
+    const message=$('customer-reply-text').value.trim();
+    if(!message)return;
+    const {data:{user},error:userError}=await client.auth.getUser();
+    if(userError||!user){say('customer-reply-status','Please sign in again.');return;}
+    const {error}=await client.from('ticket_messages').insert({ticket_id:customerTicketId,user_id:user.id,message,is_admin:false});
+    if(error){say('customer-reply-status',error.message);return;}
+    $('customer-reply-text').value='';say('customer-reply-status','Reply sent.');await openCustomerTicket(customerTicketId);
+  });
 
   const adminList=$('admin-tickets');
   if(adminList)(async()=>{
