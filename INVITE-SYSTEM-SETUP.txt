@@ -40,7 +40,9 @@ SETUP STEPS
    public.admin_users contains that user's auth.users ID.
    Admin users can then sign in and open admin.html.
 
-6. Test:
+6. The Create an invitation section appears near the top of admin.html only after the page confirms that the signed-in account is an administrator (public.admin_users / is_admin).
+
+7. Test:
    - Sign in as admin.
    - Open admin.html and create an invite for an email address.
    - Copy the code and give it privately to that person.
@@ -48,6 +50,8 @@ SETUP STEPS
      password, username and invite code.
    - Account should be created without a confirmation email.
    - Try reusing the same code: it must be rejected.
+
+If the invite section does not appear, confirm that you are signed in with the admin account and that public.admin_users contains that account's auth.users ID. Then hard-refresh the GitHub Pages site (Ctrl+Shift+R).
 
 NOTES
 - Invites expire after 7 days and can be used once.

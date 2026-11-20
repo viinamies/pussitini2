@@ -19,6 +19,7 @@
     $('tab-register')?.classList.toggle('active',mode==='register');
     if($('username-wrap')) $('username-wrap').hidden=mode!=='register';
     if($('invite-wrap')) $('invite-wrap').hidden=mode!=='register';
+    if($('invite-code')) $('invite-code').required=mode==='register';
     if($('password')) $('password').autocomplete=mode==='login'?'current-password':'new-password';
     if($('auth-submit')) $('auth-submit').textContent=mode==='login'?'Sign in':'Create account';
     say('auth-message',mode==='login'?'Sign in with your email and password.':'Enter your invitation code, choose a username and a password of at least 8 characters.');
@@ -137,6 +138,7 @@
     if(!user){adminList.innerHTML='<div class="panel-pad">Please sign in first. <a href="account.html">Go to account</a>.</div>';return;}
     const {data:ok,error:adminErr}=await client.rpc('is_admin');
     if(adminErr||!ok){adminList.innerHTML='<div class="panel-pad">You do not have administrator access.</div>';return;}
+    if($('invite-manager')) $('invite-manager').hidden=false;
     let current=null,filter='all',tickets=[];
     async function load(){
       const {data,error}=await client.from('tickets').select('id,subject,department,status,created_at,user_id').order('created_at',{ascending:false});
