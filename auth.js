@@ -18,9 +18,10 @@
     $('tab-login')?.classList.toggle('active',mode==='login');
     $('tab-register')?.classList.toggle('active',mode==='register');
     if($('username-wrap')) $('username-wrap').hidden=mode!=='register';
+    if($('invite-wrap')) $('invite-wrap').hidden=mode!=='register';
     if($('password')) $('password').autocomplete=mode==='login'?'current-password':'new-password';
     if($('auth-submit')) $('auth-submit').textContent=mode==='login'?'Sign in':'Create account';
-    say('auth-message',mode==='login'?'Sign in with your email and password.':'Choose a username and a password of at least 8 characters.');
+    say('auth-message',mode==='login'?'Sign in with your email and password.':'Enter your invitation code, choose a username and a password of at least 8 characters.');
   }
   $('tab-login')?.addEventListener('click',()=>setMode('login'));
   $('tab-register')?.addEventListener('click',()=>setMode('register'));
@@ -51,7 +52,17 @@
       if(mode==='register'){
         const username=$('username').value.trim();
         if(!/^[a-zA-Z0-9_]{3,24}$/.test(username)) throw new Error('Username must be 3–24 characters: letters, numbers or underscores.');
-        result=await client.auth.signUp({email,password,options:{data:{username},emailRedirectTo:location.origin+location.pathname}});
+        const inviteCode=$('invite-code')?.value.trim();
+        if(!inviteCode) throw new Error('An invitation code is required to create an account.');
+        const {data:registration,error:registrationError}=await client.functions.invoke('invite-auth', {
+          body:{action:'register',email,password,username,code:inviteCode}
+        });
+        if(registrationError) throw registrationError;
+        if(!registration?.user) throw new Error(registration?.error||'Registration failed. Check your invitation code and email.');
+        say('auth-message','Account created successfully. You can now sign in.');
+        $('auth-form').reset();
+        setMode('login');
+        return;
       }else result=await client.auth.signInWithPassword({email,password});
       if(result.error) throw result.error;
       if(mode==='register'&&!result.data.session) say('auth-message','Account created. Check your email for a verification link, then return here to sign in.');
@@ -160,4 +171,34 @@
     });
     await load();
   })();
+
+  // Admin-only invitation creation. The Edge Function independently verifies admin access.
+  const inviteForm=$('invite-form');
+  if(inviteForm){
+    let lastInviteCode='';
+    inviteForm.addEventListener('submit',async e=>{
+      e.preventDefault();
+      const button=$('invite-create');button.disabled=true;
+      say('invite-status','Creating invitation…');
+      $('invite-result').hidden=true;
+      try{
+        const email=$('invite-email').value.trim();
+        const {data,error}=await client.functions.invoke('invite-auth',{
+          body:{action:'create-invite',email}
+        });
+        if(error) throw error;
+        if(!data?.code) throw new Error(data?.error||'Could not create invitation.');
+        lastInviteCode=data.code;
+        say('invite-code-result',data.code);
+        $('invite-result').hidden=false;
+        say('invite-status','Invitation created for '+email+'.');
+      }catch(err){say('invite-status',err.message||'Could not create invitation.');}
+      finally{button.disabled=false;}
+    });
+    $('copy-invite')?.addEventListener('click',async()=>{
+      if(!lastInviteCode)return;
+      try{await navigator.clipboard.writeText(lastInviteCode);say('invite-status','Invitation code copied.');}
+      catch(_){say('invite-status','Select and copy the code above.');}
+    });
+  }
 })();

@@ -47,3 +47,7 @@ IMPORTANT CHECKS AFTER DEPLOYING
 - Sign in, then open /tickets.html and submit a test ticket.
 - In Supabase Table Editor, public.tickets should contain the test ticket.
 - To make an admin, run the SQL in step 6 after registering.
+
+
+INVITE-ONLY REGISTRATION
+See INVITE-SYSTEM-SETUP.txt. Run invite-system.sql and deploy the invite-auth Edge Function before enabling invite-only signup.

@@ -1,0 +1,56 @@
+PUSSITINI INVITE-ONLY REGISTRATION — SETUP
+
+This adds:
+- Admin-only invitation creation in admin.html.
+- One-use invitation codes tied to a specific email address.
+- Seven-day expiration.
+- Server-side invite validation in a Supabase Edge Function.
+- Public direct signup must be disabled so users cannot bypass invitations.
+
+IMPORTANT EMAIL BEHAVIOUR
+The Edge Function creates invited accounts with email_confirm=true. This means Supabase does not send a signup confirmation email, so this flow avoids the built-in 2-emails/hour confirmation-email limit. It also means the invitation code is the authorization mechanism; only send it privately to the intended recipient. The invite is bound to the recipient email entered by the admin.
+
+SETUP STEPS
+
+1. Run invite-system.sql in Supabase Dashboard > SQL Editor.
+   Run the existing supabase-setup.sql first if you have not already done so.
+
+2. Deploy the Edge Function.
+   Install/use the Supabase CLI, then from this folder run:
+     supabase login
+     supabase link --project-ref YOUR_PROJECT_REF
+     supabase functions deploy invite-auth --no-verify-jwt
+
+   The --no-verify-jwt flag is required because invite registration is public.
+   The function itself verifies admin access for create-invite actions.
+   Supabase automatically provides SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY
+   to deployed Edge Functions. NEVER put the service role key in website files.
+
+3. Disable ordinary public signup:
+   Supabase Dashboard > Authentication > Sign In / Providers > Email.
+   Turn off "Allow new users to sign up" (the exact label may vary).
+   Do not disable sign-in for existing users.
+
+4. Upload the CONTENTS of the supa_work folder to the ROOT of your GitHub Pages repository.
+   Keep existing files and replace account.html, admin.html and auth.js with these updated versions.
+   Upload the new invite-system.sql only as a SQL setup file; do not expose secrets.
+
+5. Ensure at least one admin exists:
+   Register/promote an administrator using your existing admin setup, then verify
+   public.admin_users contains that user's auth.users ID.
+   Admin users can then sign in and open admin.html.
+
+6. Test:
+   - Sign in as admin.
+   - Open admin.html and create an invite for an email address.
+   - Copy the code and give it privately to that person.
+   - Recipient opens account.html, selects Create account, enters the matching email,
+     password, username and invite code.
+   - Account should be created without a confirmation email.
+   - Try reusing the same code: it must be rejected.
+
+NOTES
+- Invites expire after 7 days and can be used once.
+- If the recipient email is already registered, account creation will fail; sign in instead.
+- This implementation does not send invitation emails. Admin shares the code out-of-band.
+- This ZIP does not deploy anything to your Supabase project automatically.
