@@ -1,0 +1,36 @@
+POSSUTLU SUPPORT TICKETS — PHASE 1 UPDATE
+
+Included:
+- Customer account page with clickable own-ticket list and conversation view.
+- Customer replies to their own tickets.
+- Admin ticket list, ticket conversation, admin replies and status changes.
+- Supabase SQL migration for table grants and row-level security policies.
+
+INSTALL THE WEBSITE FILES
+1. Extract this ZIP.
+2. Open the supa_work folder.
+3. Upload the contents of supa_work to the ROOT of https://github.com/viinamies/Possutlu
+   (not the supa_work folder itself).
+4. Replace existing files when GitHub asks, then Commit changes.
+5. Keep the existing Supabase project URL and publishable key in supabase-config.js.
+
+RUN THE DATABASE PERMISSION UPDATE
+1. Open Supabase Dashboard for project pjwinjmhamcrnpvyqvma.
+2. Open SQL Editor > New query.
+3. Open supabase-ticket-permissions.sql from this package.
+4. Copy all SQL and paste into the SQL Editor.
+5. Click Run. Expect Success.
+6. Do not expose or paste any service-role/secret key.
+
+TEST
+1. Sign in as a normal customer and create a ticket.
+2. Open Account > My support tickets; click the ticket.
+3. Sign in as an admin in a separate browser/private window.
+4. Open admin.html, open the ticket and send a reply.
+5. Return to the customer account, open the ticket and verify the reply appears.
+6. Test customer reply back to support.
+
+IMPORTANT
+- This is a ticket-system phase update, not a complete rebuild of the forum or marketplace.
+- If the SQL Editor reports an error, stop and share the exact error text.
+- The admin account must already exist in auth.users and be promoted by a trusted SQL Editor query.
